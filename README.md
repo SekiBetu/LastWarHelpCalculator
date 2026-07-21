@@ -34,6 +34,10 @@ The tool uses **binary search** to find the initial time where both plans reduce
 
 ## Example
 
+![](planA.jpg)
+
+![](planB.jpg)
+
 Using default values (Plan A: 37 helps × 49 min 2 sec, Plan B: 39 helps × 32 min 30 sec):
 
 ```
