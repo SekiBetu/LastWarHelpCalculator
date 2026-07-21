@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Last War - Alliance Help Time Critical Point Calculator</title>
+<meta name="description" content="Calculate the critical building time at which one alliance-help plan becomes more efficient than another in Last War.">
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg-card: #181b24;
+    --bg-input: #0d0f15;
+    --border: #2a2f3d;
+    --text: #e6e9ef;
+    --text-dim: #9aa3b2;
+    --accent: #e8c468;
+    --accent-2: #4ea1ff;
+    --plan-a: #e85d5d;
+    --plan-b: #4ea1ff;
+    --shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f4f6fa;
+      --bg-card: #ffffff;
+      --bg-input: #f7f8fb;
+      --border: #e2e6ee;
+      --text: #1a1f2e;
+      --text-dim: #5b6577;
+      --accent: #b8860b;
+      --accent-2: #2563eb;
+      --plan-a: #d94545;
+      --plan-b: #2563eb;
+      --shadow: 0 8px 30px rgba(20, 30, 60, 0.10);
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+    padding: 24px 16px 48px;
+  }
+  .container { max-width: 860px; margin: 0 auto; }
+
+  header { text-align: center; margin-bottom: 28px; }
+  header .badge {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    padding: 4px 14px;
+    margin-bottom: 12px;
+  }
+  header h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+  header p { color: var(--text-dim); font-size: 15px; margin-top: 4px; }
+
+  .formula {
+    text-align: center;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+    font-size: 14px;
+    color: var(--text-dim);
+  }
+  .formula code {
+    color: var(--accent);
+    font-family: "SF Mono", "Fira Code", Consolas, monospace;
+    font-size: 13px;
+    background: var(--bg-input);
+    padding: 2px 8px;
+    border-radius: 6px;
+  }
+
+  .plans {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-bottom: 22px;
+  }
+  @media (max-width: 620px) {
+    .plans { grid-template-columns: 1fr; }
+  }
+  .plan-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 22px 20px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+  .plan-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+  }
+  #plan-a::before { background: var(--plan-a); }
+  #plan-b::before { background: var(--plan-b); }
+  .plan-card h2 {
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  #plan-a h2 .dot { background: var(--plan-a); }
+  #plan-b h2 .dot { background: var(--plan-b); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+  label {
+    display: block;
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    margin-top: 14px;
+  }
+  label:first-of-type { margin-top: 0; }
+  input[type="number"] {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 16px;
+    padding: 11px 14px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    -moz-appearance: textfield;
+  }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none; margin: 0;
+  }
+  input[type="number"]:focus {
+    outline: none;
+    border-color: var(--accent-2);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-2) 22%, transparent);
+  }
+  .time-row { display: flex; gap: 10px; align-items: center; }
+  .time-row input { flex: 1; }
+  .time-row .unit {
+    font-size: 13px;
+    color: var(--text-dim);
+    min-width: 26px;
+    text-align: left;
+  }
+
+  .actions { text-align: center; margin-bottom: 24px; }
+  button {
+    background: var(--accent);
+    color: #1a1206;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 13px 40px;
+    cursor: pointer;
+    transition: transform 0.08s, opacity 0.15s;
+    box-shadow: var(--shadow);
+  }
+  button:hover { opacity: 0.92; }
+  button:active { transform: scale(0.97); }
+
+  .result {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 26px 24px;
+    box-shadow: var(--shadow);
+    animation: fade 0.3s ease;
+  }
+  @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .result h3 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+  .critical {
+    font-size: 34px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+    margin-bottom: 20px;
+    word-break: break-word;
+  }
+  .recs { display: grid; gap: 12px; }
+  .rec {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+  }
+  .rec .tag {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+    margin-top: 1px;
+  }
+  .rec.a .tag { background: color-mix(in srgb, var(--plan-a) 20%, transparent); color: var(--plan-a); }
+  .rec.b .tag { background: color-mix(in srgb, var(--plan-b) 20%, transparent); color: var(--plan-b); }
+  .rec .desc { font-size: 14px; }
+  .rec .desc strong { color: var(--text); }
+  .rec .desc span { color: var(--text-dim); }
+
+  .summary {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text-dim);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+  }
+
+  .error {
+    color: var(--plan-a);
+    background: color-mix(in srgb, var(--plan-a) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--plan-a) 40%, transparent);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 14px;
+    text-align: center;
+  }
+
+  footer {
+    text-align: center;
+    margin-top: 36px;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  footer a { color: var(--accent-2); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="badge">Last War</div>
+    <h1>Alliance Help Time Critical Point Calculator</h1>
+    <p>Find the exact building-time threshold where one help plan beats another</p>
+  </header>
+
+  <div class="formula">
+    Each help reduces time by&nbsp; <code>max(remaining_time &times; 0.5%, fixed_time)</code>
+  </div>
+
+  <div class="plans">
+    <div class="plan-card" id="plan-a">
+      <h2><span class="dot"></span> Plan A</h2>
+      <label for="n1">Number of helps</label>
+      <input type="number" id="n1" value="37" min="1" step="1">
+      <label for="t1min">Fixed reduction per help</label>
+      <div class="time-row">
+        <input type="number" id="t1min" value="49" min="0" step="1" placeholder="min">
+        <span class="unit">min</span>
+        <input type="number" id="t1sec" value="2" min="0" max="59" step="1" placeholder="sec">
+        <span class="unit">sec</span>
+      </div>
+    </div>
+
+    <div class="plan-card" id="plan-b">
+      <h2><span class="dot"></span> Plan B</h2>
+      <label for="n2">Number of helps</label>
+      <input type="number" id="n2" value="39" min="1" step="1">
+      <label for="t2min">Fixed reduction per help</label>
+      <div class="time-row">
+        <input type="number" id="t2min" value="32" min="0" step="1" placeholder="min">
+        <span class="unit">min</span>
+        <input type="number" id="t2sec" value="30" min="0" max="59" step="1" placeholder="sec">
+        <span class="unit">sec</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="calcBtn">Calculate</button>
+  </div>
+
+  <div id="resultArea"></div>
+
+  <footer>
+    Open-source CLI &amp; algorithm on
+    <a href="https://github.com/SekiBetu/LastWarHelpCalculator" target="_blank" rel="noopener">GitHub</a>
+    &middot; MIT License
+  </footer>
+</div>
+
+<script>
+"use strict";
+const PERCENT_RATIO = 0.005;  // 0.5%
+const EPSILON = 0.001;        // binary search precision in minutes
+
+// ---- Core algorithm (ported from the Python version) ----
+
+function simulateHelp(initialTime, helpCount, fixedTime, percentRatio) {
+  percentRatio = percentRatio === undefined ? PERCENT_RATIO : percentRatio;
+  let currentTime = initialTime;
+  for (let i = 0; i < helpCount; i++) {
+    const reduction = Math.max(currentTime * percentRatio, fixedTime);
+    currentTime -= reduction;
+  }
+  return initialTime - currentTime;
+}
+
+function findCriticalPoint(n1, t1, n2, t2, percentRatio, epsilon) {
+  percentRatio = percentRatio === undefined ? PERCENT_RATIO : percentRatio;
+  epsilon = epsilon === undefined ? EPSILON : epsilon;
+  let low = 0.0;
+  let high = 1000000.0;
+
+  let diffLow = simulateHelp(low, n1, t1, percentRatio) - simulateHelp(low, n2, t2, percentRatio);
+  let diffHigh = simulateHelp(high, n1, t1, percentRatio) - simulateHelp(high, n2, t2, percentRatio);
+
+  // No sign change -> one plan dominates the whole range.
+  if (diffLow * diffHigh > 0) {
+    return diffLow > 0 ? 0.0 : high;
+  }
+
+  while (high - low > epsilon) {
+    const midTime = (low + high) / 2;
+    const diffMid = simulateHelp(midTime, n1, t1, percentRatio) - simulateHelp(midTime, n2, t2, percentRatio);
+    // Keep the half where the sign differs from diffLow (root is there).
+    if (diffLow * diffMid <= 0) {
+      high = midTime;
+      diffHigh = diffMid;
+    } else {
+      low = midTime;
+      diffLow = diffMid;
+    }
+  }
+  return (low + high) / 2;
+}
+
+// Determine which plan ('A' or 'B') saves more just above the critical point.
+function winnerAbove(n1, t1, n2, t2, critical) {
+  if (critical <= 0.001) {
+    const d = simulateHelp(1.0, n1, t1) - simulateHelp(1.0, n2, t2);
+    return d >= 0 ? "A" : "B";
+  }
+  if (critical >= 999999.0) {
+    const d = simulateHelp(100.0, n1, t1) - simulateHelp(100.0, n2, t2);
+    return d >= 0 ? "A" : "B";
+  }
+  const sample = critical * 1.001 + 0.5;
+  const d = simulateHelp(sample, n1, t1) - simulateHelp(sample, n2, t2);
+  return d > 0 ? "A" : "B";
+}
+
+// ---- Formatting ----
+
+function formatDuration(totalMinutes) {
+  // 'Xd Xh Xm'  (e.g. 694d 10h 40m)
+  let days = Math.floor(totalMinutes / (24 * 60));
+  let remaining = totalMinutes % (24 * 60);
+  let hours = Math.floor(remaining / 60);
+  let minutes = Math.round(remaining % 60);
+  // handle rounding overflow (e.g. 59.7m -> 60m -> +1h)
+  if (minutes === 60) { minutes = 0; hours += 1; }
+  if (hours === 24) { hours = 0; days += 1; }
+  const parts = [];
+  if (days > 0) parts.push(days + "d");
+  if (hours > 0 || days > 0) parts.push(hours + "h");
+  parts.push(minutes + "m");
+  return parts.join(" ");
+}
+
+function formatMinSec(totalMinutes) {
+  // 'X min Y sec'  (e.g. 49 min 2 sec)
+  let totalSeconds = Math.round(totalMinutes * 60);
+  if (totalSeconds < 0) totalSeconds = 0;
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  if (minutes > 0 && seconds > 0) return minutes + " min " + seconds + " sec";
+  if (minutes > 0) return minutes + " min";
+  if (seconds > 0) return seconds + " sec";
+  return "0 min";
+}
+
+// ---- Input helpers ----
+
+function numValue(id) {
+  const el = document.getElementById(id);
+  const v = parseFloat(el.value);
+  return isNaN(v) ? NaN : v;
+}
+
+function buildTimeFromInputs(minId, secId) {
+  const minV = numValue(minId);
+  const secV = numValue(secId);
+  if (isNaN(minV) || isNaN(secV)) return NaN;
+  return minV + secV / 60.0;
+}
+
+// ---- UI ----
+
+function showError(msg) {
+  document.getElementById("resultArea").innerHTML =
+    '<div class="result"><div class="error">' + msg + "</div></div>";
+}
+
+function renderResult(n1, t1, n2, t2, criticalMinutes) {
+  const dhm = formatDuration(criticalMinutes);
+  const a = formatMinSec(t1);
+  const b = formatMinSec(t2);
+  const above = winnerAbove(n1, t1, n2, t2, criticalMinutes);
+  const below = above === "A" ? "B" : "A";
+  const planLabel = function (plan) {
+    return plan === "A"
+      ? "Plan A (" + n1 + "x / " + a + ")"
+      : "Plan B (" + n2 + "x / " + b + ")";
+  };
+  const tagClass = function (plan) { return plan === "A" ? "a" : "b"; };
+  const html =
+    '<div class="result">' +
+      '<h3>Critical Point</h3>' +
+      '<div class="critical">' + dhm + "</div>" +
+      '<div class="recs">' +
+        '<div class="rec ' + tagClass(above) + '">' +
+          '<span class="tag">Plan ' + above + ' wins</span>' +
+          '<div class="desc">When initial building time &gt; <strong>' + dhm + "</strong><br>" +
+          '<span>' + planLabel(above) + " saves more time</span></div>" +
+        "</div>" +
+        '<div class="rec ' + tagClass(below) + '">' +
+          '<span class="tag">Plan ' + below + ' wins</span>' +
+          '<div class="desc">When initial building time &lt; <strong>' + dhm + "</strong><br>" +
+          '<span>' + planLabel(below) + " saves more time</span></div>" +
+        "</div>" +
+      "</div>" +
+      '<div class="summary">' +
+        "<span>Percentage reduction: 0.5%</span>" +
+        "<span>Plan A: " + n1 + "x / " + a + "</span>" +
+        "<span>Plan B: " + n2 + "x / " + b + "</span>" +
+        "<span>Precision: &plusmn;0.001 min</span>" +
+      "</div>" +
+    "</div>";
+  document.getElementById("resultArea").innerHTML = html;
+}
+
+function calculate() {
+  const n1 = numValue("n1");
+  const n2 = numValue("n2");
+  const t1 = buildTimeFromInputs("t1min", "t1sec");
+  const t2 = buildTimeFromInputs("t2min", "t2sec");
+
+  if (isNaN(n1) || isNaN(n2) || isNaN(t1) || isNaN(t2)) {
+    showError("Please fill in all fields with valid numbers.");
+    return;
+  }
+  if (n1 <= 0 || n2 <= 0 || n1 % 1 !== 0 || n2 % 1 !== 0) {
+    showError("Number of helps must be a positive integer.");
+    return;
+  }
+  if (t1 < 0 || t2 < 0) {
+    showError("Fixed reduction cannot be negative.");
+    return;
+  }
+
+  const critical = findCriticalPoint(n1, t1, n2, t2);
+  renderResult(n1, t1, n2, t2, critical);
+}
+
+document.getElementById("calcBtn").addEventListener("click", calculate);
+// Recalculate on Enter inside any input
+document.querySelectorAll("input").forEach(function (el) {
+  el.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") calculate();
+  });
+});
+// Auto-calculate once on load with the default values
+calculate();
+</script>
+</body>
+</html>
